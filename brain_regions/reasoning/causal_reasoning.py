@@ -34,7 +34,7 @@ class CausalReasoning(ReasoningModule):
         result = await self.reason(f"{scenario}. {query}", context)
 
         # Emit completion
-        await self.event_bus.emit("causal_reasoning_complete", result)
+        await self.event_bus.emit("causal_reasoning_request_complete", result)
 
         return result
 

@@ -39,7 +39,7 @@ class CreativeReasoning(ReasoningModule):
             result = await self._apply_constraints(result, constraints)
 
         # Emit completion
-        await self.event_bus.emit("creative_reasoning_complete", result)
+        await self.event_bus.emit("creative_reasoning_request_complete", result)
 
         return result
 

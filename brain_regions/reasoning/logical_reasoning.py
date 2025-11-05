@@ -20,6 +20,9 @@ class LogicalReasoning(ReasoningModule):
         """Initialize logical reasoning"""
         logger.info("initializing_logical_reasoning")
 
+        # Subscribe to reasoning requests
+        self.event_bus.subscribe("reasoning_request", self._on_reasoning_request)
+
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """Process logical reasoning request"""
 
@@ -29,7 +32,7 @@ class LogicalReasoning(ReasoningModule):
         result = await self.reason(problem, context)
 
         # Emit reasoning complete
-        await self.event_bus.emit("logical_reasoning_complete", result)
+        await self.event_bus.emit("reasoning_request_complete", result)
 
         return result
 
@@ -274,3 +277,7 @@ class LogicalReasoning(ReasoningModule):
                 issues.append(line.strip())
 
         return issues[:5]  # Limit to top 5 issues
+
+    async def _on_reasoning_request(self, data: Dict):
+        """Handle reasoning requests"""
+        result = await self.process(data)

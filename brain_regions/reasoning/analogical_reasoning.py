@@ -34,7 +34,7 @@ class AnalogicalReasoning(ReasoningModule):
         result = await self.reason(f"Find analogy between {source} and {target}", context)
 
         # Emit completion
-        await self.event_bus.emit("analogical_reasoning_complete", result)
+        await self.event_bus.emit("analogical_reasoning_request_complete", result)
 
         return result
 

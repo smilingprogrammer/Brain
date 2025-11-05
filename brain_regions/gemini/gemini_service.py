@@ -1,4 +1,9 @@
+"""
+Updated Gemini Service for new google-genai library
+Uses the new Client-based API (google-genai v0.2.0+)
+"""
 from google import genai
+from google.genai import types
 from typing import Dict, List, Optional
 import asyncio
 import json
@@ -12,33 +17,34 @@ class GeminiService:
     """Core Gemini 2.0 Flash integration service"""
 
     def __init__(self):
-        genai.configure(api_key=settings.gemini_api_key)
-        self.model = genai.GenerativeModel(settings.gemini_model)
+        # New API: Client automatically uses GEMINI_API_KEY environment variable
+        self.client = genai.Client(api_key=settings.gemini_api_key)
+        self.model_name = settings.gemini_model
 
         # Different generation configs for different use cases
         self.configs = {
-            "fast": genai.GenerationConfig(
-                temperature=0.3,
-                max_output_tokens=256,
-                candidate_count=1
-            ),
-            "balanced": genai.GenerationConfig(
-                temperature=0.7,
-                max_output_tokens=1024,
-                candidate_count=2
-            ),
-            "creative": genai.GenerationConfig(
-                temperature=0.9,
-                max_output_tokens=2048,
-                candidate_count=3,
-                top_p=0.95
-            ),
-            "structured": genai.GenerationConfig(
-                temperature=0.1,
-                max_output_tokens=1024,
-                candidate_count=1,
-                response_mime_type="application/json"
-            )
+            "fast": {
+                "temperature": 0.3,
+                "max_output_tokens": 256,
+                "candidate_count": 1
+            },
+            "balanced": {
+                "temperature": 0.7,
+                "max_output_tokens": 1024,
+                "candidate_count": 1  # New API only supports 1 candidate
+            },
+            "creative": {
+                "temperature": 0.9,
+                "max_output_tokens": 2048,
+                "candidate_count": 1,
+                "top_p": 0.95
+            },
+            "structured": {
+                "temperature": 0.1,
+                "max_output_tokens": 1024,
+                "candidate_count": 1,
+                "response_mime_type": "application/json"
+            }
         }
 
     async def generate(self,
@@ -52,26 +58,39 @@ class GeminiService:
             full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
 
             # Get config
-            config = self.configs.get(config_name, self.configs["balanced"])
+            config_dict = self.configs.get(config_name, self.configs["balanced"])
 
-            # Generate asynchronously
-            response = await asyncio.to_thread(
-                self.model.generate_content,
-                full_prompt,
-                generation_config=config
+            # Create GenerateContentConfig
+            config = types.GenerateContentConfig(
+                temperature=config_dict.get("temperature", 0.7),
+                max_output_tokens=config_dict.get("max_output_tokens", 1024),
+                top_p=config_dict.get("top_p"),
+                response_mime_type=config_dict.get("response_mime_type")
             )
+
+            # Generate using new API
+            response = await asyncio.to_thread(
+                self.client.models.generate_content,
+                model=self.model_name,
+                contents=full_prompt,
+                config=config
+            )
+
+            # Extract usage metadata
+            usage = {"prompt_tokens": 0, "completion_tokens": 0}
+            if hasattr(response, 'usage_metadata') and response.usage_metadata:
+                usage_meta = response.usage_metadata
+                usage["prompt_tokens"] = getattr(usage_meta, 'prompt_token_count', 0)
+                usage["completion_tokens"] = getattr(usage_meta, 'candidates_token_count', 0)
 
             return {
                 "success": True,
                 "text": response.text,
-                "usage": {
-                    "prompt_tokens": response.usage_metadata.prompt_token_count,
-                    "completion_tokens": response.usage_metadata.candidates_token_count
-                }
+                "usage": usage
             }
 
         except Exception as e:
-            logger.error("gemini_generation_error", error=str(e))
+            logger.error("gemini_generation_error", error=str(e), error_type=type(e).__name__)
             return {
                 "success": False,
                 "error": str(e),
@@ -93,8 +112,18 @@ class GeminiService:
 
         if response["success"]:
             try:
-                response["parsed"] = json.loads(response["text"])
-            except json.JSONDecodeError:
+                # Try to parse JSON from response
+                text = response["text"].strip()
+
+                # Handle markdown code blocks
+                if text.startswith("```json"):
+                    text = text.replace("```json", "").replace("```", "").strip()
+                elif text.startswith("```"):
+                    text = text.replace("```", "").strip()
+
+                response["parsed"] = json.loads(text)
+            except json.JSONDecodeError as e:
+                logger.warning("json_parse_error", error=str(e), text=response["text"][:200])
                 response["parsed"] = None
 
         return response
