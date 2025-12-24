@@ -1,0 +1,455 @@
+# 🧠 Step-by-Step Testing Guide
+
+Here's how to test each component individually with concrete examples:
+
+## 1. Language Comprehension Module
+
+### Test Code:
+```python
+import asyncio
+from brain_regions.language.comprehension import LanguageComprehension
+from core.event_bus import EventBus
+
+async def test_language_comprehension():
+    # Setup
+    event_bus = EventBus()
+    language = LanguageComprehension(event_bus)
+    await language.initialize()
+
+    # Test input
+    test_text = "If water suddenly became twice as dense, what would happen to marine life?"
+
+    # Process
+    result = await language.process({"text": test_text})
+
+    # Print results
+    print("=== LANGUAGE COMPREHENSION OUTPUT ===")
+    print(f"Tokens: {result['tokens'][:10]}...")  # First 10 tokens
+    print(f"Entities: {result['entities']}")
+    print(f"Complexity Score: {result['complexity_score']}")
+    print(f"Embedding shape: {len(result['embedding'])}")
+    print(f"Dependencies: {result['dependencies'][:3]}...")  # First 3
+
+# Run it
+asyncio.run(test_language_comprehension())
+```
+
+### Expected Output:
+```
+=== LANGUAGE COMPREHENSION OUTPUT ===
+Tokens: ['If', 'water', 'suddenly', 'became', 'twice', 'as', 'dense', ',', 'what', 'would']...
+Entities: [('water', 'SUBSTANCE'), ('marine life', 'NOUN')]
+Complexity Score: 0.7
+Embedding shape: 768
+Dependencies: [('If', 'mark', 'became'), ('water', 'nsubj', 'became'), ('suddenly', 'advmod', 'became')]...
+```
+
+---
+
+## 2. Working Memory Module
+
+### Test Code:
+```python
+import asyncio
+from brain_regions.memory.working_memory import WorkingMemory
+from brain_regions.gemini.gemini_service import GeminiService
+from core.event_bus import EventBus
+
+async def test_working_memory():
+    # Setup
+    event_bus = EventBus()
+    gemini = GeminiService()
+    wm = WorkingMemory(event_bus, gemini, capacity=5)  # Small capacity for testing
+    await wm.initialize()
+
+    # Add multiple items to test compression
+    test_items = [
+        {"content": {"text": "Water density doubles"}, "importance": "high"},
+        {"content": {"text": "Fish swim bladders compress"}, "importance": "high"},
+        {"content": {"text": "Pressure increases at all depths"}, "importance": "medium"},
+        {"content": {"text": "Marine ecosystems affected"}, "importance": "high"},
+        {"content": {"text": "Deep sea creatures might survive"}, "importance": "medium"}
+    ]
+
+    print("=== ADDING ITEMS TO WORKING MEMORY ===")
+    for i, item in enumerate(test_items):
+        await wm.store(item)
+        print(f"Added item {i+1}: {item['content']['text']}")
+        print(f"Buffer size: {len(wm.buffer)}/{wm.capacity}")
+
+    # Test retrieval
+    print("\n=== TESTING RETRIEVAL ===")
+    query = "What happens to fish?"
+    relevant_items = await wm.retrieve(query, k=2)
+    print(f"Query: {query}")
+    print(f"Retrieved {len(relevant_items)} relevant items")
+
+    # Add one more item to trigger compression
+    print("\n=== TRIGGERING COMPRESSION ===")
+    new_item = {"content": {"text": "Evolution would favor different traits"}, "importance": "low"}
+    await wm.store(new_item)
+
+    print(f"Compressed history length: {len(wm.compressed_history)}")
+    if wm.compressed_history:
+        print(f"Compression summary: {wm.compressed_history[0]['summary'][:100]}...")
+
+# Run it
+asyncio.run(test_working_memory())
+```
+
+### Expected Output:
+```
+=== ADDING ITEMS TO WORKING MEMORY ===
+Added item 1: Water density doubles
+Buffer size: 1/5
+Added item 2: Fish swim bladders compress
+Buffer size: 2/5
+Added item 3: Pressure increases at all depths
+Buffer size: 3/5
+Added item 4: Marine ecosystems affected
+Buffer size: 4/5
+Added item 5: Deep sea creatures might survive
+Buffer size: 5/5
+
+=== TESTING RETRIEVAL ===
+Query: What happens to fish?
+Retrieved 2 relevant items
+
+=== TRIGGERING COMPRESSION ===
+Compressed history length: 1
+Compression summary: The key points are: water density doubling causes fish swim bladders to compress, pressure increases...
+```
+
+---
+
+## 3. Logical Reasoning Module
+
+### Test Code:
+```python
+import asyncio
+from brain_regions.reasoning.logical_reasoning import LogicalReasoning
+from brain_regions.gemini.gemini_service import GeminiService
+from core.event_bus import EventBus
+
+async def test_logical_reasoning():
+    # Setup
+    event_bus = EventBus()
+    gemini = GeminiService()
+    logic = LogicalReasoning(event_bus, gemini)
+    await logic.initialize()
+
+    # Test cases
+    test_problems = [
+        "If all fish need water and tuna is a fish, does tuna need water?",
+        "If pressure doubles when density doubles, and density is now 2x, what is the pressure?"
+    ]
+
+    for problem in test_problems:
+        print(f"\n=== LOGICAL REASONING TEST ===")
+        print(f"Problem: {problem}")
+
+        result = await logic.reason(problem, {})
+
+        print(f"Success: {result['success']}")
+        print(f"Conclusion: {result.get('conclusion', 'N/A')}")
+        print(f"Proof Type: {result.get('proof_type', 'N/A')}")
+        print(f"Confidence: {result.get('confidence', 0):.2f}")
+
+        if result.get('proof_steps'):
+            print("Proof Steps:")
+            for i, step in enumerate(result['proof_steps'][:3]):  # First 3 steps
+                print(f"  {i+1}. {step.get('statement', '')}")
+
+# Run it
+asyncio.run(test_logical_reasoning())
+```
+
+### Expected Output:
+```
+=== LOGICAL REASONING TEST ===
+Problem: If all fish need water and tuna is a fish, does tuna need water?
+Success: True
+Conclusion: Yes, tuna needs water
+Proof Type: direct_proof
+Confidence: 0.95
+Proof Steps:
+  1. All fish need water (Given)
+  2. Tuna is a fish (Given)
+  3. Therefore, tuna needs water (Universal instantiation)
+
+=== LOGICAL REASONING TEST ===
+Problem: If pressure doubles when density doubles, and density is now 2x, what is the pressure?
+Success: True
+Conclusion: The pressure is 2x the original pressure
+Proof Type: direct_proof
+Confidence: 0.90
+Proof Steps:
+  1. P = f(ρ) where pressure doubles when density doubles (Given)
+  2. ρ_new = 2 × ρ_original (Given)
+  3. Therefore, P_new = 2 × P_original (Direct application)
+```
+
+---
+
+## 4. Global Workspace Integration
+
+### Test Code:
+```python
+import asyncio
+from brain_regions.integration.global_workspace import GlobalWorkspace
+from core.event_bus import EventBus
+
+async def test_global_workspace():
+    # Setup
+    event_bus = EventBus()
+    gw = GlobalWorkspace(event_bus)
+    await gw.initialize()
+
+    # Simulate multiple brain regions competing
+    print("=== SIMULATING ATTENTION COMPETITION ===")
+
+    # Add competing representations
+    await gw._add_to_competition("language", {
+        "original_text": "Water density doubles",
+        "confidence": 0.8
+    })
+    print("Added language output (confidence: 0.8)")
+
+    await gw._add_to_competition("logical_reasoning", {
+        "conclusion": "Pressure doubles at all depths",
+        "confidence": 0.95
+    })
+    print("Added logical reasoning (confidence: 0.95)")
+
+    await gw._add_to_competition("working_memory", {
+        "current_contents": ["density change", "marine life impact"],
+        "confidence": 0.7
+    })
+    print("Added working memory (confidence: 0.7)")
+
+    # Run competition
+    print("\n=== RUNNING COMPETITION ===")
+    winners = await gw._run_attention_competition()
+
+    print(f"Winners: {list(winners.keys())}")
+    for region, info in winners.items():
+        print(f"  {region}: salience={info['salience']:.2f}")
+
+    # Test integration
+    print("\n=== INTEGRATION ===")
+    integrated = await gw._integrate_representations(winners)
+
+    print(f"Primary Focus: {integrated['primary_focus']['region']}")
+    print(f"Integrated Meaning: {integrated['integrated_meaning']}")
+    print(f"Overall Confidence: {integrated['confidence']:.2f}")
+
+# Run it
+asyncio.run(test_global_workspace())
+```
+
+### Expected Output:
+```
+=== SIMULATING ATTENTION COMPETITION ===
+Added language output (confidence: 0.8)
+Added logical reasoning (confidence: 0.95)
+Added working memory (confidence: 0.7)
+
+=== RUNNING COMPETITION ===
+Winners: ['logical_reasoning', 'language']
+  logical_reasoning: salience=0.81
+  language: salience=0.72
+
+=== INTEGRATION ===
+Primary Focus: logical_reasoning
+Integrated Meaning: Language: Water density doubles | Logic: Pressure doubles at all depths
+Overall Confidence: 0.76
+```
+
+---
+
+## 5. Executive Controller (Prefrontal Cortex)
+
+### Test Code:
+```python
+import asyncio
+from brain_regions.executive.prefrontal_cortex import PrefrontalCortex
+from brain_regions.gemini.gemini_service import GeminiService
+from core.event_bus import EventBus
+
+async def test_executive():
+    # Setup
+    event_bus = EventBus()
+    gemini = GeminiService()
+    executive = PrefrontalCortex(event_bus, gemini)
+    await executive.initialize()
+
+    # Test planning
+    test_task = "Analyze the impact of doubled water density on marine life"
+    context = {
+        "working_memory": "Water density change scenario",
+        "knowledge": "Physics and biology available"
+    }
+
+    print("=== EXECUTIVE PLANNING ===")
+    print(f"Task: {test_task}")
+
+    # Generate plan
+    plan = await executive._generate_plan(test_task, context)
+
+    print(f"\nMain Goal: {plan['main_goal']}")
+    print(f"Number of sub-goals: {len(plan['sub_goals'])}")
+    print("\nSub-goals:")
+    for i, goal in enumerate(plan['sub_goals']):
+        print(f"  {i+1}. {goal['goal']}")
+        print(f"     Strategy: {goal['strategy']}")
+        print(f"     Priority: {goal['priority']}")
+
+    print(f"\nSuccess Criteria: {plan['success_criteria']}")
+    print(f"Contingency Plans: {plan['contingency_plans'][0] if plan['contingency_plans'] else 'None'}")
+
+    # Test progress monitoring
+    print("\n=== PROGRESS ASSESSMENT ===")
+    # Simulate some history
+    executive.strategy_history = [
+        {"success": True}, {"success": True}, {"success": False}, {"success": True}
+    ]
+
+    progress = await executive._assess_progress()
+    print(f"Success Rate: {progress['success_rate']:.1%}")
+    print(f"Needs Adaptation: {progress['needs_adaptation']}")
+
+# Run it
+asyncio.run(test_executive())
+```
+
+### Expected Output:
+```
+=== EXECUTIVE PLANNING ===
+Task: Analyze the impact of doubled water density on marine life
+
+Main Goal: Analyze impact of water density change on marine life
+Number of sub-goals: 3
+
+Sub-goals:
+  1. Understand physics of density change
+     Strategy: logical
+     Priority: 1
+  2. Analyze buoyancy effects on marine organisms
+     Strategy: causal
+     Priority: 2
+  3. Predict ecosystem-wide impacts
+     Strategy: creative
+     Priority: 3
+
+Success Criteria: ['Physics explained', 'Biological impacts identified', 'Ecosystem changes predicted']
+Contingency Plans: Use analogies from high-pressure environments
+
+=== PROGRESS ASSESSMENT ===
+Success Rate: 75.0%
+Needs Adaptation: False
+```
+
+---
+
+## 6. Complete Integration Test
+
+### Test Code:
+```python
+import asyncio
+from main import CognitiveTextBrain
+
+async def test_full_integration():
+    # Create brain
+    brain = CognitiveTextBrain()
+    await brain.initialize()
+
+    # Test simple question
+    print("=== SIMPLE QUESTION TEST ===")
+    simple_q = "What is 2 + 2?"
+    print(f"Input: {simple_q}")
+    response = await brain.process_text(simple_q)
+    print(f"Output: {response}\n")
+
+    # Test logical reasoning
+    print("=== LOGICAL REASONING TEST ===")
+    logic_q = "If all mammals are warm-blooded and whales are mammals, are whales warm-blooded?"
+    print(f"Input: {logic_q}")
+    response = await brain.process_text(logic_q)
+    print(f"Output: {response}\n")
+
+    # Test complex reasoning
+    print("=== COMPLEX REASONING TEST ===")
+    complex_q = "What would happen if gravity suddenly reversed?"
+    print(f"Input: {complex_q}")
+    response = await brain.process_text(complex_q)
+    print(f"Output: {response[:200]}...\n")  # First 200 chars
+
+    await brain.shutdown()
+
+# Run it
+asyncio.run(test_full_integration())
+```
+
+### Expected Output:
+```
+=== SIMPLE QUESTION TEST ===
+Input: What is 2 + 2?
+Output: 2 + 2 equals 4.
+
+=== LOGICAL REASONING TEST ===
+Input: If all mammals are warm-blooded and whales are mammals, are whales warm-blooded?
+Output: Yes, whales are warm-blooded. This follows from logical deduction: since all mammals are warm-blooded (major premise) and whales are mammals (minor premise), we can conclude that whales are warm-blooded.
+
+=== COMPLEX REASONING TEST ===
+Input: What would happen if gravity suddenly reversed?
+Output: If gravity suddenly reversed, the consequences would be catastrophic and immediate:
+
+**Instant Effects:**
+- Everything not secured would fly upward at 9.8 m/s²
+- The atmosphere would begin escaping into space...
+```
+
+---
+
+## Testing Tips
+
+1. **Set up test environment**:
+```bash
+# Create test file
+touch test_modules.py
+
+# Add imports and test functions
+# Run individual tests
+python test_modules.py
+```
+
+2. **Mock Gemini for faster testing**:
+```python
+class MockGeminiService:
+    async def generate(self, prompt, config_name="balanced"):
+        return {"success": True, "text": "Mock response"}
+
+    async def generate_structured(self, prompt, schema):
+        return {"success": True, "parsed": {"mock": "data"}}
+```
+
+3. **Add debug logging**:
+```python
+import structlog
+structlog.configure(
+    processors=[structlog.dev.ConsoleRenderer()]
+)
+```
+
+4. **Test with timeouts**:
+```python
+try:
+    result = await asyncio.wait_for(
+        module.process(input_data),
+        timeout=5.0
+    )
+except asyncio.TimeoutError:
+    print("Module took too long!")
+```
+
+Each module can be tested independently, making it easy to understand how data flows through the system and how each brain region transforms information

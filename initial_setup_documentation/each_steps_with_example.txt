@@ -1,0 +1,426 @@
+# 🧠 Step-by-Step Cognitive Processing Example
+
+Let's trace how the brain processes this complex problem:
+
+**Input**: *"If water suddenly became twice as dense, what would happen to marine life?"*
+
+---
+
+## Phase 1: Initial Processing (0-50ms)
+
+### Step 1.1: Text Input Reception
+📍 **Location**: `main.py` → Event Bus
+```python
+# User input arrives
+await brain.process_text("If water suddenly became twice as dense, what would happen to marine life?")
+
+# Event emitted
+await event_bus.emit("input_received", {"text": "If water suddenly..."})
+```
+
+### Step 1.2: Language Comprehension
+📍 **Location**: `brain_regions/language/comprehension.py`
+
+**Processing**:
+```python
+# Tokenization
+tokens = ["If", "water", "suddenly", "became", "twice", "as", "dense", ",",
+          "what", "would", "happen", "to", "marine", "life", "?"]
+
+# Entity Recognition
+entities = [("water", "SUBSTANCE"), ("marine life", "ORGANISM")]
+
+# Dependency Parsing
+dependencies = [
+    ("became", "ROOT", "root"),
+    ("water", "nsubj", "became"),
+    ("dense", "acomp", "became"),
+    ("twice", "advmod", "dense")
+]
+
+# Semantic Embedding (768-dim vector)
+embedding = [0.234, -0.567, 0.891, ...]  # Sentence-BERT encoding
+
+# Complexity Score
+complexity = 0.7  # (moderate - conditional + scientific concepts)
+```
+
+**Event Emitted**:
+```python
+await event_bus.emit("language_comprehension_complete", {
+    "original_text": "If water suddenly became twice as dense...",
+    "tokens": tokens,
+    "entities": entities,
+    "embedding": embedding,
+    "complexity_score": 0.7
+})
+```
+
+---
+
+## Phase 2: Memory Integration (50-100ms)
+
+### Step 2.1: Working Memory Update
+📍 **Location**: `brain_regions/memory/working_memory.py`
+
+**Salience Computation**:
+```python
+# Check novelty
+is_novel = True  # "twice as dense water" not in recent memory
+novelty_bonus = 0.2
+
+# Base salience
+salience = 0.5 + 0.2 (novelty) + 0.15 (scientific topic) = 0.85
+```
+
+**Storage**:
+```python
+memory_item = {
+    "type": "language_comprehension",
+    "content": {
+        "text": "If water suddenly became twice as dense...",
+        "entities": ["water", "marine life"],
+        "key_concept": "density_change"
+    },
+    "timestamp": 1234567890.123,
+    "salience": 0.85,
+    "access_count": 0
+}
+
+# Add to buffer (current size: 3/7)
+buffer.append(memory_item)
+```
+
+**Event Emitted**:
+```python
+await event_bus.emit("working_memory_updated", {
+    "new_item": memory_item,
+    "current_size": 4
+})
+```
+
+---
+
+## Phase 3: Executive Planning (100-500ms)
+
+### Step 3.1: Task Analysis
+📍 **Location**: `brain_regions/executive/prefrontal_cortex.py`
+
+**Gemini Plan Generation**:
+```python
+prompt = """As the prefrontal cortex executive controller, create a detailed plan:
+
+Task: If water suddenly became twice as dense, what would happen to marine life?
+
+Current Context:
+- Working Memory: Contains density change scenario
+- Available Knowledge: Physics, biology, marine ecosystems
+
+Generate a plan..."""
+
+# Gemini Response (structured JSON)
+plan = {
+    "main_goal": "Analyze impact of water density change on marine life",
+    "sub_goals": [
+        {
+            "goal": "Understand physics of density change",
+            "strategy": "logical",
+            "required_regions": ["logical_reasoning", "semantic_memory"],
+            "priority": 1
+        },
+        {
+            "goal": "Analyze buoyancy effects on marine organisms",
+            "strategy": "causal",
+            "required_regions": ["causal_reasoning", "semantic_memory"],
+            "priority": 2
+        },
+        {
+            "goal": "Predict ecosystem-wide impacts",
+            "strategy": "creative",
+            "required_regions": ["creative_reasoning", "analogical_reasoning"],
+            "priority": 3
+        }
+    ],
+    "success_criteria": ["Physics explained", "Biological impacts identified", "Ecosystem changes predicted"],
+    "contingency_plans": ["Use analogies from high-pressure environments", "Reference deep-sea adaptations"]
+}
+```
+
+---
+
+## Phase 4: Parallel Reasoning (500-2000ms)
+
+### Step 4.1: Sub-goal 1 - Physics Analysis
+📍 **Location**: `brain_regions/reasoning/logical_reasoning.py`
+
+**Logical Structure Extraction**:
+```python
+analysis = {
+    "premises": [
+        "Water density increases 2x",
+        "Density = mass/volume",
+        "Pressure = density × gravity × height"
+    ],
+    "conclusion": "Water pressure at any depth doubles",
+    "variables": ["density", "pressure", "buoyancy"]
+}
+```
+
+**Proof Construction**:
+```python
+proof_steps = [
+    {
+        "statement": "1. Given: ρ_new = 2 × ρ_original",
+        "justification": "Problem statement",
+        "rule": "Given"
+    },
+    {
+        "statement": "2. P = ρgh, therefore P_new = 2ρgh = 2P_original",
+        "justification": "Hydrostatic pressure formula",
+        "rule": "Substitution"
+    },
+    {
+        "statement": "3. Buoyant force F_b = ρ × V × g doubles",
+        "justification": "Archimedes' principle",
+        "rule": "Direct application"
+    }
+]
+```
+
+### Step 4.2: Sub-goal 2 - Biological Impact (Parallel)
+📍 **Location**: Multiple reasoning modules running concurrently
+
+**Causal Reasoning**:
+```python
+causal_chain = {
+    "initial_cause": "Water density doubles",
+    "immediate_effects": [
+        "Swim bladders compress to half volume",
+        "Neutral buoyancy lost for most fish",
+        "Energy cost of swimming doubles"
+    ],
+    "secondary_effects": [
+        "Fish sink to bottom",
+        "Increased metabolic demands",
+        "Respiratory stress from pressure"
+    ],
+    "long_term_effects": [
+        "Mass extinction of pelagic species",
+        "Adaptation pressure for denser bodies",
+        "Food chain collapse"
+    ]
+}
+```
+
+### Step 4.3: Sub-goal 3 - Creative Predictions (Parallel)
+📍 **Location**: Creative reasoning with analogical support
+
+**Analogical Reasoning**:
+```python
+analogies = [
+    {
+        "source": "Deep sea creatures at 1000m depth",
+        "mapping": "Already adapted to 100x surface pressure",
+        "insight": "Oil-filled swim bladders might become standard"
+    },
+    {
+        "source": "Dead Sea (1.24x density)",
+        "mapping": "Everything floats more easily",
+        "insight": "But 2x would overwhelm adaptations"
+    }
+]
+```
+
+---
+
+## Phase 5: Global Integration (2000-2500ms)
+
+### Step 5.1: Attention Competition
+📍 **Location**: `brain_regions/integration/global_workspace.py`
+
+**Competing Representations**:
+```python
+attention_competition = {
+    "logical_reasoning": {
+        "data": {"conclusion": "Pressure doubles at all depths"},
+        "salience": 0.85,  # High confidence in physics
+    },
+    "causal_reasoning": {
+        "data": {"impact": "Catastrophic for marine life"},
+        "salience": 0.92,  # Very high - survival threat
+    },
+    "creative_reasoning": {
+        "data": {"adaptations": "New evolutionary pressures"},
+        "salience": 0.78
+    },
+    "working_memory": {
+        "data": {"context": "Sudden change scenario"},
+        "salience": 0.81
+    }
+}
+
+# Winners: causal_reasoning (0.92), logical_reasoning (0.85), working_memory (0.81)
+```
+
+### Step 5.2: Consciousness-like Integration
+```python
+integrated_state = {
+    "primary_focus": {
+        "region": "causal_reasoning",
+        "content": "Catastrophic cascade: buoyancy failure → sinking →
+                    pressure death → ecosystem collapse"
+    },
+    "secondary_elements": [
+        {
+            "region": "logical_reasoning",
+            "content": "Pressure doubles: 10m = old 20m",
+            "relevance": 0.31
+        },
+        {
+            "region": "working_memory",
+            "content": "Sudden change leaves no adaptation time",
+            "relevance": 0.28
+        }
+    ],
+    "integrated_meaning": "Immediate catastrophic impact on marine life due to
+                          physics of doubled pressure and buoyancy failure",
+    "action_implications": ["Generate detailed explanation", "Consider exceptions"],
+    "confidence": 0.86
+}
+```
+
+**Global Broadcast**:
+```python
+await event_bus.emit("global_workspace_broadcast", integrated_state)
+# All brain regions receive this integrated understanding
+```
+
+---
+
+## Phase 6: Response Synthesis (2500-3000ms)
+
+### Step 6.1: Executive Synthesis
+📍 **Location**: `brain_regions/executive/prefrontal_cortex.py`
+
+**Gemini Synthesis Prompt**:
+```python
+prompt = """Synthesize these execution results into a coherent final answer:
+
+Results:
+1. Physics: Water pressure doubles at every depth, buoyancy forces double
+2. Biology: Fish swim bladders compress, lose buoyancy control, sink
+3. Ecosystem: Catastrophic collapse, mass extinction except deep-sea adapted species
+
+Create a clear, comprehensive response that integrates all successful results."""
+```
+
+**Final Response Generation**:
+```python
+final_output = """If water suddenly became twice as dense, it would be catastrophic for marine life:
+
+**Immediate Physical Effects:**
+- Water pressure would double at every depth (10 meters would feel like 20 meters)
+- All buoyancy forces would double, drastically affecting how organisms float or sink
+
+**Impact on Marine Life:**
+- Fish with swim bladders would immediately lose buoyancy control as their bladders compress to half size
+- Most fish would sink uncontrollably, experiencing fatal pressure increases
+- Swimming would require twice the energy, exhausting animals quickly
+
+**Ecosystem Collapse:**
+- Surface and mid-water species would face immediate extinction
+- Only deep-sea creatures already adapted to extreme pressure might survive
+- The food chain would collapse from the bottom up
+
+**Potential Survivors:**
+- Deep-sea fish with oil-filled swim bladders
+- Bottom-dwelling creatures already adapted to pressure
+- Some jellyfish and cartilaginous fish might adapt faster
+
+This would represent one of the most severe extinction events in Earth's history."""
+```
+
+---
+
+## Phase 7: Learning & Memory Consolidation (3000ms+)
+
+### Step 7.1: Strategy Success Recording
+📍 **Location**: `brain_regions/executive/prefrontal_cortex.py`
+
+```python
+strategy_history.append({
+    "plan": "Analyze water density impact",
+    "success": True,
+    "strategies_used": ["logical", "causal", "creative"],
+    "effectiveness": {
+        "logical": 0.85,  # Good for physics
+        "causal": 0.92,   # Excellent for bio impact
+        "creative": 0.78  # Helpful for adaptations
+    }
+})
+```
+
+### Step 7.2: Working Memory Compression
+📍 **Location**: `brain_regions/memory/working_memory.py`
+
+```python
+# If buffer full, compress older items
+compressed = {
+    "summary": "Analyzed 2x water density: doubles pressure, catastrophic for marine life,
+                mass extinction except deep-sea species",
+    "original_items": [item1, item2, item3],
+    "compression_time": 1234567893.456,
+    "key_insights": ["pressure doubling", "buoyancy failure", "extinction event"]
+}
+```
+
+### Step 7.3: Episodic Memory Formation
+```python
+episode = {
+    "problem": "Water density doubling impact",
+    "solution_path": ["physics analysis", "biological cascade", "ecosystem prediction"],
+    "key_learning": "Density changes have multiplicative effects on pressure/buoyancy",
+    "confidence": 0.86,
+    "timestamp": 1234567893.789
+}
+# Store for future similar problems
+```
+
+---
+
+## Monitoring Throughout
+
+### Meta-Cognitive Tracking
+📍 **Active throughout all phases**
+
+```python
+monitoring_data = {
+    "phase_latencies": {
+        "comprehension": 45,
+        "memory_update": 30,
+        "planning": 380,
+        "reasoning": 1420,
+        "integration": 450,
+        "synthesis": 480
+    },
+    "attention_shifts": 7,
+    "working_memory_peaks": 5,
+    "strategy_adaptations": 1,  # Switched to creative for adaptations
+    "confidence_trajectory": [0.7, 0.75, 0.82, 0.86],  # Increasing
+    "total_time": 3012  # milliseconds
+}
+```
+
+---
+
+## Summary
+
+This example demonstrates how the cognitive architecture:
+
+1. **Decomposes** complex problems into manageable sub-problems
+2. **Parallelizes** different types of reasoning
+3. **Integrates** multiple perspectives through attention competition
+4. **Synthesizes** coherent responses using executive control
+5. **Learns** from the experience for future problems
+
+The entire process takes ~3 seconds, with most time spent in reasoning (1.4s) and synthesis (0.5s). The system successfully combines physics knowledge, biological understanding, and creative prediction into a comprehensive answer about a hypothetical scenario.
