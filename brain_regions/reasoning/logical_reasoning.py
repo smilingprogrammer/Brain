@@ -238,16 +238,17 @@ class LogicalReasoning(ReasoningModule):
 
         # Look for confidence mentions
         patterns = [
-            r'confidence[:\s]+([0-9.]+)',
-            r'([0-9.]+)\s*confidence',
-            r'confident[:\s]+([0-9.]+)'
+            r'confidence[:\s]+([0-9]+(?:\.[0-9]+)?)',
+            r'([0-9]+(?:\.[0-9]+)?)\s*confidence',
+            r'confident[:\s]+([0-9]+(?:\.[0-9]+)?)'
         ]
 
         for pattern in patterns:
             match = re.search(pattern, text.lower())
             if match:
                 try:
-                    return float(match.group(1))
+                    value = float(match.group(1))
+                    return value / 100 if value > 1 else value
                 except:
                     pass
 
@@ -258,6 +259,10 @@ class LogicalReasoning(ReasoningModule):
             return 0.7
         elif "uncertain" in text.lower():
             return 0.3
+        elif "valid" in text.lower() and "invalid" not in text.lower():
+            return 0.85
+        elif "correct" in text.lower() and "incorrect" not in text.lower():
+            return 0.8
 
         return 0.5
 

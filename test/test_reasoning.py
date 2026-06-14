@@ -30,7 +30,7 @@ async def setup_reasoning():
 @pytest.mark.asyncio
 async def test_logical_reasoning(setup_reasoning):
     """Test logical reasoning module"""
-    modules = await setup_reasoning
+    modules = setup_reasoning
     logical = modules["logical"]
 
     # Test simple syllogism
@@ -45,7 +45,7 @@ async def test_logical_reasoning(setup_reasoning):
 @pytest.mark.asyncio
 async def test_analogical_reasoning(setup_reasoning):
     """Test analogical reasoning module"""
-    modules = await setup_reasoning
+    modules = setup_reasoning
     analogical = modules["analogical"]
 
     # Test analogy
@@ -60,7 +60,7 @@ async def test_analogical_reasoning(setup_reasoning):
 @pytest.mark.asyncio
 async def test_causal_reasoning(setup_reasoning):
     """Test causal reasoning module"""
-    modules = await setup_reasoning
+    modules = setup_reasoning
     causal = modules["causal"]
 
     # Test causal chain
@@ -75,7 +75,7 @@ async def test_causal_reasoning(setup_reasoning):
 @pytest.mark.asyncio
 async def test_creative_reasoning(setup_reasoning):
     """Test creative reasoning module"""
-    modules = await setup_reasoning
+    modules = setup_reasoning
     creative = modules["creative"]
 
     # Test creative problem

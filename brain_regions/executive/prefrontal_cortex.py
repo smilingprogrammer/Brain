@@ -353,14 +353,17 @@ class PrefrontalCortex(BrainRegion):
     async def _on_new_task(self, data: Dict):
         """Handle new task request"""
 
-        task = data.get("task", "")
-        context = data.get("context", {})
+        async def process_task():
+            task = data.get("task", "")
+            context = data.get("context", {})
 
-        # Process the task
-        result = await self.process({"task": task, "context": context})
+            # Process the task
+            result = await self.process({"task": task, "context": context})
 
-        # Emit completion
-        await self.event_bus.emit("task_complete", result)
+            # Emit completion
+            await self.event_bus.emit("task_complete", result)
+
+        asyncio.create_task(process_task())
 
     def get_state(self) -> Dict[str, Any]:
         return {

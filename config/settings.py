@@ -3,8 +3,14 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Gemini
-    gemini_api_key: str
-    gemini_model: str = "gemini-2.0-flash-exp"
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3-flash-preview"
+    gemini_fallback_models: str = "gemini-3.1-flash-lite,gemini-3.1-flash-lite-preview,gemini-2.5-flash-lite,gemini-3.5-flash"
+    gemini_request_timeout_ms: int = 12000
+    gemini_retry_attempts: int = 1
+    gemini_local_fallback: bool = True
+    brain_demo_mode: bool = False
+    use_local_embedder: bool = True
 
     # Memory
     working_memory_capacity: int = 7

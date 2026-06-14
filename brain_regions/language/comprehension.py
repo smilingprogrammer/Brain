@@ -1,11 +1,33 @@
-from sentence_transformers import SentenceTransformer
 import spacy
 from typing import Dict, List, Any
 from core.interfaces import BrainRegion
 from core.event_bus import EventBus
+from config.settings import settings
 import structlog
+import hashlib
+
+try:
+    from sentence_transformers import SentenceTransformer
+except Exception:
+    SentenceTransformer = None
 
 logger = structlog.get_logger()
+
+
+class SimpleEmbedder:
+    """Small deterministic embedder for demos when model downloads are unavailable."""
+
+    def encode(self, text_or_texts):
+        import numpy as np
+
+        texts = text_or_texts if isinstance(text_or_texts, list) else [text_or_texts]
+        vectors = []
+        for text in texts:
+            digest = hashlib.sha256(text.encode("utf-8")).digest()
+            values = [(byte / 255.0) for byte in digest[:16]]
+            vectors.append(values)
+        arr = np.array(vectors, dtype=float)
+        return arr if isinstance(text_or_texts, list) else arr[0]
 
 
 class LanguageComprehension(BrainRegion):
@@ -13,13 +35,34 @@ class LanguageComprehension(BrainRegion):
 
     def __init__(self, event_bus: EventBus):
         self.event_bus = event_bus
-        self.nlp = spacy.load("en_core_web_sm")
-        self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
+        self.nlp = self._load_spacy_model()
+        self.embedder = self._load_embedder()
         self.state = {}
+
+    def _load_spacy_model(self):
+        try:
+            return spacy.load("en_core_web_sm")
+        except OSError:
+            logger.warning("spacy_model_missing_using_blank_pipeline", model="en_core_web_sm")
+            nlp = spacy.blank("en")
+            if "sentencizer" not in nlp.pipe_names:
+                nlp.add_pipe("sentencizer")
+            return nlp
+
+    def _load_embedder(self):
+        if settings.brain_demo_mode or settings.use_local_embedder or SentenceTransformer is None:
+            return SimpleEmbedder()
+
+        try:
+            return SentenceTransformer("all-MiniLM-L6-v2")
+        except Exception as exc:
+            logger.warning("sentence_transformer_unavailable_using_simple_embedder", error=str(exc))
+            return SimpleEmbedder()
 
     async def initialize(self):
         """Initialize language models"""
         logger.info("initializing_language_comprehension")
+        self.event_bus.subscribe("input_received", self._on_input_received)
         # Warm up models
         _ = self.embedder.encode("test")
         _ = self.nlp("test")
@@ -87,3 +130,7 @@ class LanguageComprehension(BrainRegion):
 
     def get_state(self) -> Dict[str, Any]:
         return self.state
+
+    async def _on_input_received(self, data: Dict[str, Any]):
+        """Handle raw text input events."""
+        await self.process(data)

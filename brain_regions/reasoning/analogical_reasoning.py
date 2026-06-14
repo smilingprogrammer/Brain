@@ -1,5 +1,6 @@
 from typing import Dict, Any, List, Tuple
 import numpy as np
+import re
 from core.interfaces import ReasoningModule
 from core.event_bus import EventBus
 from brain_regions.gemini.gemini_service import GeminiService
@@ -196,7 +197,27 @@ class AnalogicalReasoning(ReasoningModule):
                     current_mapping = {}
                 continue
 
-            # Parse different formats
+            field_match = re.match(r'^(?:\d+\.\s*)?\**\s*([a-z_]+)\s*:\**\s*(.+)$', line, re.IGNORECASE)
+            if field_match:
+                field = field_match.group(1).lower()
+                value = field_match.group(2).strip()
+                if field == "source_element":
+                    if current_mapping.get("source_element") and current_mapping.get("target_element"):
+                        mappings.append(current_mapping)
+                        current_mapping = {}
+                    current_mapping["source_element"] = value
+                elif field == "target_element":
+                    current_mapping["target_element"] = value
+                elif field == "relationship":
+                    current_mapping["relationship"] = value
+                elif field == "mapping_type":
+                    current_mapping["mapping_type"] = value.lower()
+                elif field == "strength":
+                    strength_match = re.search(r'([01](?:\.\d+)?)', value)
+                    current_mapping["strength"] = float(strength_match.group(1)) if strength_match else 0.7
+                continue
+
+            # Parse different arrow formats
             if '→' in line or '->' in line:
                 # Format: source → target (relationship)
                 parts = line.replace('→', '->').split('->')
@@ -219,6 +240,20 @@ class AnalogicalReasoning(ReasoningModule):
                         "mapping_type": "structural",
                         "strength": 0.7
                     }
+
+            # Parse markdown table rows: | source | target | relationship | type | strength |
+            elif line.startswith("|") and line.endswith("|") and "---" not in line:
+                cells = [cell.strip().strip("*") for cell in line.strip("|").split("|")]
+                if len(cells) >= 5 and cells[0].lower() not in {"source_element", "source element", "source"}:
+                    strength_match = re.search(r'([01](?:\.\d+)?)', cells[4])
+                    mappings.append({
+                        "source_element": cells[0],
+                        "target_element": cells[1],
+                        "relationship": cells[2],
+                        "mapping_type": cells[3].lower(),
+                        "strength": float(strength_match.group(1)) if strength_match else 0.7
+                    })
+                    current_mapping = {}
 
             # Look for strength indicators
             if "strong" in line.lower():
